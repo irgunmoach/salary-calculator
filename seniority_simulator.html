@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>סימולטור ותק</title>
+  <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;700&display=swap');
+    body {
+      font-family: 'Heebo', sans-serif;
+    }
+    .slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 15px;
+      border-radius: 5px;
+      background: #d3d3d3;
+      outline: none;
+      opacity: 0.7;
+      transition: opacity .2s;
+    }
+    .slider:hover {
+      opacity: 1;
+    }
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: #ffffff;
+      cursor: pointer;
+    }
+    .slider::-moz-range-thumb {
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: #ffffff;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const SenioritySimulator = () => {
+      const [militaryService, setMilitaryService] = React.useState(0);
+      const [yearsSinceBachelor, setYearsSinceBachelor] = React.useState(0);
+      const [monthsSinceBachelor, setMonthsSinceBachelor] = React.useState(1); // Default to January
+      const [yearsSinceMaster, setYearsSinceMaster] = React.useState(0);
+      const [monthsSinceMaster, setMonthsSinceMaster] = React.useState(1); // Default to January
+      const [seniority, setSeniority] = React.useState(0);
+      const [includeMilitaryService, setIncludeMilitaryService] = React.useState(false);
+      const currentYear = new Date().getFullYear();
+
+      const calculateSeniority = () => {
+		  const currentMonth = 4; // Set to April
+		  let totalSeniority = 0;
+
+		  // Include military service points only if the checkbox is checked
+		  if (includeMilitaryService) {
+			totalSeniority += militaryService;
+		  }
+
+		  if (yearsSinceBachelor > 0) {
+			if (yearsSinceMaster > 0) {
+			  // If master's degree is completed, count bachelor seniority only until master's graduation
+			  const bachelorToMasterYears = yearsSinceBachelor - yearsSinceMaster;
+			  const bachelorToMasterMonths = monthsSinceBachelor - monthsSinceMaster;
+			  const bachelorSeniority = Math.max(0, bachelorToMasterYears + bachelorToMasterMonths / 12);
+			  totalSeniority += bachelorSeniority;
+
+			  // Add master's seniority
+			  totalSeniority += yearsSinceMaster * 1.5 + (currentMonth - monthsSinceMaster) / 8;
+			} else {
+			  // If no master's degree, count all bachelor seniority
+			  totalSeniority += yearsSinceBachelor + (currentMonth - monthsSinceBachelor) / 12;
+			}
+		  }
+
+		  setSeniority(totalSeniority);
+		};
+
+      const resetValues = () => {
+        setMilitaryService(0);
+        setYearsSinceBachelor(0);
+        setMonthsSinceBachelor(1); // Reset to January
+        setYearsSinceMaster(0);
+        setMonthsSinceMaster(1); // Reset to January
+        setSeniority(0);
+        setIncludeMilitaryService(false);
+      };
+
+      React.useEffect(() => {
+        calculateSeniority();
+      }, [militaryService, yearsSinceBachelor, monthsSinceBachelor, yearsSinceMaster, monthsSinceMaster, includeMilitaryService]);
+
+      return (
+        <div className="min-h-screen p-8 bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center">
+          <div className="w-full max-w-md backdrop-blur-md bg-white/30 shadow-xl rounded-lg p-6">
+            <h2 className="text-2xl font-bold text-white text-center mb-6">סימולטור ותק</h2>
+            <div className="space-y-6">
+              <div>
+                <label htmlFor="militaryService" className="block text-sm font-medium text-white mb-2">
+                  שנות שירות צבאי חובה (או שירות לאומי)
+                </label>
+                <input
+                  type="range"
+                  id="militaryService"
+                  min="0"
+                  max="3"
+                  step="1"
+                  value={militaryService}
+                  onChange={(e) => setMilitaryService(parseInt(e.target.value))}
+                  className="slider"
+                />
+                <p className="text-left text-sm text-white mt-1">{militaryService} שנים</p>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="includeMilitaryService"
+                  checked={includeMilitaryService}
+                  onChange={() => setIncludeMilitaryService(!includeMilitaryService)}
+                  className="mr-2"
+                />
+                <label htmlFor="includeMilitaryService" className="text-sm font-medium text-white">
+                  סיימתי את השירות טרם לימודיי
+                </label>
+              </div>
+
+              <div>
+                <label htmlFor="yearsSinceBachelor" className="block text-sm font-medium text-white mb-2">
+                  שנת סיום התואר הראשון
+                </label>
+                <input
+                  type="range"
+                  id="yearsSinceBachelor"
+                  min="0"
+                  max="20"
+                  step="1"
+                  value={yearsSinceBachelor}
+                  onChange={(e) => setYearsSinceBachelor(parseInt(e.target.value))}
+                  className="slider"
+                />
+                <p className="text-left text-sm text-white mt-1">סיום תואר בשנת {currentYear - yearsSinceBachelor}</p>
+                {yearsSinceBachelor > 0 && (
+                  <select
+                    value={monthsSinceBachelor}
+                    onChange={(e) => setMonthsSinceBachelor(parseInt(e.target.value))}
+                    className="mt-2 block w-full p-2 border border-gray-300 rounded"
+                  >
+                    <option value={1}>ינואר</option>
+                    <option value={2}>פברואר</option>
+                    <option value={3}>מרץ</option>
+                    <option value={4}>אפריל</option>
+                    <option value={5}>מאי</option>
+                    <option value={6}>יוני</option>
+                    <option value={7}>יולי</option>
+                    <option value={8}>אוגוסט</option>
+                    <option value={9}>ספטמבר</option>
+                    <option value={10}>אוקטובר</option>
+                    <option value={11}>נובמבר</option>
+                    <option value={12}>דצמבר</option>
+                  </select>
+                )}
+              </div>
+              <div>
+                <label htmlFor="yearsSinceMaster" className="block text-sm font-medium text-white mb-2">
+                  שנת סיום התואר השני
+                </label>
+                <input
+                  type="range"
+                  id="yearsSinceMaster"
+                  min="0"
+                  max="15"
+                  step="1"
+                  value={yearsSinceMaster}
+                  onChange={(e) => setYearsSinceMaster(parseInt(e.target.value))}
+                  className="slider"
+                />
+                <p className="text-left text-sm text-white mt-1">סיום תואר בשנת {currentYear - yearsSinceMaster}</p>
+                {yearsSinceMaster > 0 && (
+                  <select
+                    value={monthsSinceMaster}
+                    onChange={(e) => setMonthsSinceMaster(parseInt(e.target.value))}
+                    className="mt-2 block w-full p-2 border border-gray-300 rounded"
+                  >
+                    <option value={1}>ינואר</option>
+                    <option value={2}>פברואר</option>
+                    <option value={3}>מרץ</option>
+                    <option value={4}>אפריל</option>
+                    <option value={5}>מאי</option>
+                    <option value={6}>יוני</option>
+                    <option value={7}>יולי</option>
+                    <option value={8}>אוגוסט</option>
+                    <option value={9}>ספטמבר</option>
+                    <option value={10}>אוקטובר</option>
+                    <option value={11}>נובמבר</option>
+                    <option value={12}>דצמבר</option>
+                  </select>
+                )}
+              </div>
+              
+              <div className="mt-4">
+                <button
+                  onClick={resetValues}
+                  className="w-full bg-blue-500 text-white font-bold py-1 rounded"
+                >
+                  אפס ערכים
+                </button>
+              </div>
+
+              <div className="mt-4">
+                <h3 className="text-lg font-bold text-white">סך הוותק שלך: {seniority.toFixed(2)} שנים</h3>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    ReactDOM.render(<SenioritySimulator />, document.getElementById('root'));
+  </script>
+</body>
+</html>
