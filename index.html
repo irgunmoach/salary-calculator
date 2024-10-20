@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>סימולטור ותק</title>
+  <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700&display=swap');
+    body {
+      font-family: 'Heebo', sans-serif;
+      background-color: #f0f4f8;
+    }
+    .slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 8px;
+      border-radius: 5px;
+      background: #d1d5db;
+      outline: none;
+      opacity: 0.7;
+      transition: opacity .2s;
+    }
+    .slider:hover {
+      opacity: 1;
+    }
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+    }
+    .slider::-webkit-slider-thumb:hover {
+      background: #2563eb;
+      box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.1);
+    }
+    .slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+    }
+    .slider::-moz-range-thumb:hover {
+      background: #2563eb;
+      box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.1);
+    }
+    .checkbox {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const SenioritySimulator = () => {
+      const [militaryService, setMilitaryService] = React.useState(0);
+      const [yearsSinceBachelor, setYearsSinceBachelor] = React.useState(0);
+      const [monthsSinceBachelor, setMonthsSinceBachelor] = React.useState(1);
+      const [yearsSinceMaster, setYearsSinceMaster] = React.useState(0);
+      const [monthsSinceMaster, setMonthsSinceMaster] = React.useState(1);
+      const [seniority, setSeniority] = React.useState(0);
+      const [includeMilitaryService, setIncludeMilitaryService] = React.useState(false);
+      const [calculationMade, setCalculationMade] = React.useState(false);
+      const [showRedButton, setShowRedButton] = React.useState(false);
+      const [showPopup, setShowPopup] = React.useState(false);
+      const [changesMade, setChangesMade] = React.useState(false);
+      const currentYear = new Date().getFullYear();
+      const currentMonth = 4; // April
+      const timerRef = React.useRef(null);
+
+      const calculateSeniority = () => {
+        let totalSeniority = 0;
+        let bachelorToMasterSeniority = 0;
+        let masterSeniority = 0;
+
+        if (includeMilitaryService) {
+          totalSeniority += militaryService;
+        }
+
+        if (yearsSinceBachelor > 0) {
+          const bachelorGradYear = currentYear - yearsSinceBachelor;
+          const bachelorGradMonth = monthsSinceBachelor;
+
+          if (yearsSinceMaster > 0 && yearsSinceMaster <= yearsSinceBachelor) {
+            const masterGradYear = currentYear - yearsSinceMaster;
+            const masterGradMonth = monthsSinceMaster;
+
+            // Calculate time between Bachelor's and Master's
+            let yearDiff = masterGradYear - bachelorGradYear;
+            let monthDiff = masterGradMonth - bachelorGradMonth;
+            if (monthDiff < 0) {
+              yearDiff--;
+              monthDiff += 12;
+            }
+            bachelorToMasterSeniority = yearDiff + monthDiff / 12;
+            totalSeniority += bachelorToMasterSeniority;
+
+            // Calculate time since Master's with 1.5 multiplier
+            yearDiff = currentYear - masterGradYear;
+            monthDiff = currentMonth - masterGradMonth;
+            if (monthDiff < 0) {
+              yearDiff--;
+              monthDiff += 12;
+            }
+            masterSeniority = (yearDiff + monthDiff / 12) * 1.5;
+            totalSeniority += masterSeniority;
+          } else {
+            // If only Bachelor's degree or Master's year is after Bachelor's
+            let yearDiff = currentYear - bachelorGradYear;
+            let monthDiff = currentMonth - bachelorGradMonth;
+            if (monthDiff < 0) {
+              yearDiff--;
+              monthDiff += 12;
+            }
+            totalSeniority += yearDiff + monthDiff / 12;
+          }
+        }
+
+        setSeniority(totalSeniority);
+        setCalculationMade(true);
+        setShowRedButton(false);
+        
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+        }
+        
+        if (changesMade) {
+          timerRef.current = setTimeout(() => {
+            setShowRedButton(true);
+          }, 2500);
+        }
+        
+        setChangesMade(false);
+      };
+
+      React.useEffect(() => {
+        calculateSeniority();
+        
+        return () => {
+          if (timerRef.current) {
+            clearTimeout(timerRef.current);
+          }
+        };
+      }, [militaryService, yearsSinceBachelor, monthsSinceBachelor, yearsSinceMaster, monthsSinceMaster, includeMilitaryService]);
+
+      const handleInputChange = (setter) => (value) => {
+        setter(value);
+        setChangesMade(true);
+      };
+
+      const resetCalculation = () => {
+        setMilitaryService(0);
+        setYearsSinceBachelor(0);
+        setMonthsSinceBachelor(1);
+        setYearsSinceMaster(0);
+        setMonthsSinceMaster(1);
+        setIncludeMilitaryService(false);
+        setCalculationMade(false);
+        setShowRedButton(false);
+        setSeniority(0);
+        setChangesMade(false);
+        if (timerRef.current) {
+          clearTimeout(timerRef.current);
+        }
+      };
+
+      return (
+        <div className="min-h-screen p-8 bg-gradient-to-br from-blue-100 to-indigo-200 flex items-center justify-center">
+          <div className="w-full max-w-md bg-white shadow-2xl rounded-2xl p-8">
+            <h2 className="text-3xl font-bold text-indigo-800 text-center mb-8">סימולטור ותק</h2>
+            <div className="space-y-8">
+              <div>
+                <label htmlFor="militaryService" className="block text-sm font-medium text-gray-700 mb-2">
+                  שנות שירות צבאי חובה (או שירות לאומי)
+                </label>
+                <input
+                  type="range"
+                  id="militaryService"
+                  min="0"
+                  max="3"
+                  step="1"
+                  value={militaryService}
+                  onChange={(e) => handleInputChange(setMilitaryService)(parseInt(e.target.value))}
+                  className="slider"
+                />
+                <p className="text-right text-sm text-gray-600 mt-2">{militaryService} שנים</p>
+              </div>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="includeMilitaryService"
+                  checked={includeMilitaryService}
+                  onChange={() => handleInputChange(setIncludeMilitaryService)(!includeMilitaryService)}
+                  className="checkbox"
+                />
+                <label htmlFor="includeMilitaryService" className="ml-3 text-sm font-medium text-gray-700">
+                  סיימתי את השירות טרם לימודיי
+                </label>
+              </div>
+
+              <div>
+                <label htmlFor="yearsSinceBachelor" className="block text-sm font-medium text-gray-700 mb-2">
+                  שנת סיום התואר הראשון
+                </label>
+                <input
+                  type="range"
+                  id="yearsSinceBachelor"
+                  min="0"
+                  max="20"
+                  step="1"
+                  value={yearsSinceBachelor}
+                  onChange={(e) => handleInputChange(setYearsSinceBachelor)(parseInt(e.target.value))}
+                  className="slider"
+                />
+                <p className="text-right text-sm text-gray-600 mt-2">סיום תואר בשנת {currentYear - yearsSinceBachelor}</p>
+                {yearsSinceBachelor > 0 && (
+                  <select
+                    value={monthsSinceBachelor}
+                    onChange={(e) => handleInputChange(setMonthsSinceBachelor)(parseInt(e.target.value))}
+                    className="mt-2 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    {[...Array(12)].map((_, i) => (
+                      <option key={i} value={i + 1}>
+                        {new Date(0, i).toLocaleString('he-IL', {month: 'long'})}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="yearsSinceMaster" className="block text-sm font-medium text-gray-700 mb-2">
+                  שנת סיום התואר השני
+                </label>
+                <input
+                  type="range"
+                  id="yearsSinceMaster"
+                  min="0"
+                  max="15"
+                  step="1"
+                  value={yearsSinceMaster}
+                  onChange={(e) => handleInputChange(setYearsSinceMaster)(parseInt(e.target.value))}
+                  className="slider"
+                />
+                <p className="text-right text-sm text-gray-600 mt-2">סיום תואר בשנת {currentYear - yearsSinceMaster}</p>
+                {yearsSinceMaster > 0 && (
+                  <select
+                    value={monthsSinceMaster}
+                    onChange={(e) => handleInputChange(setMonthsSinceMaster)(parseInt(e.target.value))}
+                    className="mt-2 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    {[...Array(12)].map((_, i) => (
+                      <option key={i} value={i + 1}>
+                        {new Date(0, i).toLocaleString('he-IL', {month: 'long'})}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {calculationMade && (
+                <div className="mt-8 text-center p-4 bg-indigo-100 rounded-lg">
+                  <h3 className="text-xl font-semibold text-indigo-800 mb-2">תוצאה:</h3>
+                  <p className="text-3xl font-bold text-indigo-600">{seniority.toFixed(2)} שנות ותק</p>
+                </div>
+              )}
+
+              <div className="flex flex-col items-center space-y-4">
+                <button
+                  onClick={resetCalculation}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-300 shadow-md"
+                >
+                  אפס חישוב
+                </button>
+                {calculationMade && showRedButton && (
+                  <button
+                    onClick={() => setShowPopup(true)}
+                    className="px-6 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-300 shadow-md"
+                  >
+                    זה לא מה שמופיע לי בתלוש!
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          {showPopup && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+              <div className="bg-white p-8 rounded-lg max-w-md">
+                <p className="text-lg text-gray-800 mb-6">
+                  אם הותק המחושב לא תואם את מה שמופיע לכם בתלוש, כתבו אלינו בכתובת irgun.pniyot@mail.huji.ac.il
+                </p>
+                <button
+                  onClick={() => setShowPopup(false)}
+                  className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-300 shadow-md"
+                >
+                  סגור
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    ReactDOM.render(<SenioritySimulator />, document.getElementById('root'));
+  </script>
+</body>
+</html>
